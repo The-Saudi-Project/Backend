@@ -1,22 +1,16 @@
 import express from "express";
-import cors from "cors";
-import routes from "./routes.js";
 
 const app = express();
 
-app.use(
-  cors({
-    origin: "http://localhost:5173",
-    credentials: true,
-  }),
-);
-
 app.use(express.json());
 
-app.use("/api", routes);
+/* routes example */
+import authRoutes from "./routes/auth.routes.js";
+import serviceRoutes from "./routes/service.routes.js";
+import bookingRoutes from "./routes/booking.routes.js";
 
-app.get("/health", (req, res) => {
-  res.json({ status: "ok" });
-});
+app.use("/auth", authRoutes);
+app.use("/services", serviceRoutes);
+app.use("/bookings", bookingRoutes);
 
 export default app;

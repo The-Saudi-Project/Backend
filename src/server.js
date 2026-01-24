@@ -1,13 +1,18 @@
 import dotenv from "dotenv";
+import cors from "cors";
 import app from "./app.js";
 import connectDB from "./config/db.js";
-import cors from "cors";
 
 dotenv.config();
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8080;
 
-/* ---------- CORS (must be BEFORE routes) ---------- */
+/* ---------- HEALTH CHECK (MUST BE FIRST) ---------- */
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
+/* ---------- MIDDLEWARE ---------- */
 app.use(
   cors({
     origin: ["http://localhost:5173", "https://YOUR_VERCEL_APP.vercel.app"],
@@ -15,17 +20,14 @@ app.use(
   }),
 );
 
-/* ---------- HEALTH CHECK (REQUIRED FOR RAILWAY) ---------- */
-app.get("/health", (req, res) => {
-  res.json({ status: "ok" });
-});
-
 /* ---------- START SERVER FIRST ---------- */
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
-});
 
-/* ---------- CONNECT DB AFTER SERVER START ---------- */
-connectDB()
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error("MongoDB connection failed:", err.message));
+  try {
+    await connectDB();
+    console.log("MongoDB connected");
+  } catch (err) {
+    console.error("MongoDB connection failed", err);
+  }
+});
