@@ -3,20 +3,10 @@ import cors from "cors";
 
 const app = express();
 
-/* ---------- CORS (CRITICAL) ---------- */
+/* ---------- CORS (FIXED) ---------- */
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // allow server-to-server & Postman
-      if (!origin) return callback(null, true);
-
-      // allow all vercel deployments + localhost
-      if (origin.includes("vercel.app") || origin === "http://localhost:5173") {
-        return callback(null, true);
-      }
-
-      return callback(new Error("Not allowed by CORS"));
-    },
+    origin: true,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
