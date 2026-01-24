@@ -6,8 +6,20 @@ const app = express();
 /* ---------- CORS (CRITICAL) ---------- */
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://the-saudi-project.vercel.app"],
+    origin: (origin, callback) => {
+      // allow server-to-server & Postman
+      if (!origin) return callback(null, true);
+
+      // allow all vercel deployments + localhost
+      if (origin.includes("vercel.app") || origin === "http://localhost:5173") {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 
