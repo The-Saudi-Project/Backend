@@ -1,16 +1,27 @@
 import express from "express";
-import authRoutes from "./modules/auth/auth.routes.js";
-import testRoutes from "./modules/test/test.routes.js";
-import serviceRoutes from "./modules/services/service.routes.js";
-import bookingRoutes from "./modules/bookings/booking.routes.js";
-import userRoutes from "./modules/users/user.routes.js";
+import router from "./router.js"; // 👈 IMPORTANT
+import cors from "cors";
 
-const router = express.Router();
+const app = express();
 
-router.use("/auth", authRoutes);
-router.use("/test", testRoutes);
-router.use("/services", serviceRoutes);
-router.use("/bookings", bookingRoutes);
-router.use("/users", userRoutes);
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://YOUR_FRONTEND_DOMAIN.vercel.app",
+    ],
+    credentials: true,
+  }),
+);
 
-export default router;
+app.use(express.json());
+
+// Health check (Railway NEEDS this)
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
+// Mount ALL routes
+app.use(router);
+
+export default app;
