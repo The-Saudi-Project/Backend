@@ -2,6 +2,12 @@ import mongoose from "mongoose";
 
 const bookingSchema = new mongoose.Schema(
   {
+    service: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Service",
+      required: true,
+    },
+
     customer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -14,10 +20,25 @@ const bookingSchema = new mongoose.Schema(
       default: null,
     },
 
-    service: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Service",
+    /* CUSTOMER DETAILS (SNAPSHOT) */
+    customerName: {
+      type: String,
       required: true,
+    },
+    customerPhone: {
+      type: String,
+      required: true,
+    },
+    customerEmail: {
+      type: String,
+    },
+    customerAddress: {
+      type: String,
+      required: true,
+    },
+
+    notes: {
+      type: String,
     },
 
     scheduledAt: {
@@ -27,13 +48,11 @@ const bookingSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["CREATED", "ASSIGNED", "IN_PROGRESS", "COMPLETED"],
+      enum: ["CREATED", "ASSIGNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"],
       default: "CREATED",
     },
   },
   { timestamps: true },
 );
 
-const Booking = mongoose.model("Booking", bookingSchema);
-
-export default Booking;
+export default mongoose.model("Booking", bookingSchema);

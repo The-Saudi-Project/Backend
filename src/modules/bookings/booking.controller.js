@@ -6,24 +6,58 @@ import { BOOKING_STATUS, ALLOWED_TRANSITIONS } from "./booking.rules.js";
  * Customer: Create booking
  */
 export const createBooking = async (req, res) => {
-  const { serviceId, scheduledAt } = req.body;
+  console.log("🚨 CREATE BOOKING HIT");
+  console.log("📦 BODY:", req.body);
+  console.log("👤 USER:", req.user);
+  const {
+    serviceId,
+    scheduledAt,
+    customerName,
+    customerPhone,
+    customerAddress,
+    notes,
+  } = req.body;
 
-  if (!serviceId || !scheduledAt) {
-    return res.status(400).json({ message: "Service and time required" });
+  // ✅ VALIDATION
+  if (
+    !serviceId ||
+    !scheduledAt ||
+    !customerName ||
+    !customerPhone ||
+    !customerAddress
+  ) {
+    return res.status(400).json({
+      message: "Missing required booking details",
+    });
   }
 
-  const service = await Service.findOne({ _id: serviceId, isActive: true });
+  // ✅ SERVICE CHECK
+  const service = await Service.findOne({
+    _id: serviceId,
+    isActive: true,
+  });
+
   if (!service) {
     return res.status(404).json({
       message: "This service is no longer available for booking.",
     });
   }
 
-  const booking = await Booking.create({
+  // ✅ CREATE BOOKING (FORCED SAVE)
+  const booking = new Booking({
     customer: req.user.id,
     service: serviceId,
     scheduledAt,
+    customerName,
+    customerPhone,
+    customerAddress,
+    notes,
+    status: BOOKING_STATUS.CREATED,
   });
+  console.log("🧪 BOOKING BEFORE SAVE:", booking.toObject());
+  await booking.save({ validateBeforeSave: true });
+
+  console.log("✅ SAVED BOOKING:", booking);
 
   res.status(201).json(booking);
 };
