@@ -1,12 +1,14 @@
 import express from "express";
 import {
   createBooking,
+  getCustomerBookings,
+  getProviderBookings,
+  getAllBookingsAdmin,
   assignProvider,
-  updateBookingStatus,
-  listAllBookings,
-  listProviderBookings,
-  listCustomerBookings,
+  acceptBooking,
+  completeBooking,
 } from "./booking.controller.js";
+
 import {
   authenticate,
   authorizeRoles,
@@ -14,37 +16,50 @@ import {
 
 const router = express.Router();
 
-// Customer
-router.post("/", authenticate, authorizeRoles("customer"), createBooking);
+/* ================= CUSTOMER ================= */
+
+// ✅ THIS IS MISSING
 router.get(
-  "/my",
+  "/customer",
   authenticate,
   authorizeRoles("customer"),
-  listCustomerBookings,
+  getCustomerBookings,
 );
 
-// Admin
-router.get("/", authenticate, authorizeRoles("admin"), listAllBookings);
-router.post("/assign", authenticate, authorizeRoles("admin"), assignProvider);
+router.post("/", authenticate, authorizeRoles("customer"), createBooking);
 
-// Provider
+/* ================= PROVIDER ================= */
+
 router.get(
   "/provider",
   authenticate,
   authorizeRoles("provider"),
-  listProviderBookings,
+  getProviderBookings,
 );
 
-router.post(
-  "/status",
-  authenticate,
-  authorizeRoles("provider"),
-  updateBookingStatus,
-);
+/* ================= ADMIN ================= */
+
+router.get("/", authenticate, authorizeRoles("admin"), getAllBookingsAdmin);
+
 router.patch(
   "/:id/assign",
   authenticate,
   authorizeRoles("admin"),
   assignProvider,
 );
+
+router.patch(
+  "/:id/accept",
+  authenticate,
+  authorizeRoles("provider"),
+  acceptBooking,
+);
+
+router.patch(
+  "/:id/complete",
+  authenticate,
+  authorizeRoles("provider"),
+  completeBooking,
+);
+
 export default router;

@@ -32,6 +32,7 @@ router.delete(
   authorizeRoles("admin"),
   deleteService,
 );
-router.patch("/:id", authenticate, authorizeRoles("admin"), updateService);
 router.get("/public", getPublicServices);
+router.patch("/:id", authenticate, authorizeRoles("admin"), updateService);
+
 export default router;
