@@ -9,6 +9,7 @@ import {
   authenticate,
   authorizeRoles,
 } from "../../middlewares/auth.middleware.js";
+import { updateService } from "./service.controller.js";
 
 const router = express.Router();
 
@@ -31,5 +32,6 @@ router.delete(
   authorizeRoles("admin"),
   deleteService,
 );
+router.patch("/:id", authenticate, authorizeRoles("admin"), updateService);
 
 export default router;

@@ -40,7 +40,7 @@ export const listAllServicesAdmin = async (req, res) => {
 };
 
 /**
- * Admin: Delete service (hard delete)
+ * Admin: Delete service (hard delete)s
  */
 export const deleteService = async (req, res) => {
   const { serviceId } = req.params;
@@ -65,4 +65,32 @@ export const deleteService = async (req, res) => {
   await Service.deleteOne({ _id: serviceId });
 
   res.json({ message: "Service deleted permanently" });
+};
+
+//Edit service
+export const updateService = async (req, res) => {
+  const { id } = req.params;
+  const { name, price, description } = req.body;
+
+  if (!name || price === undefined) {
+    return res.status(400).json({
+      message: "Name and price are required",
+    });
+  }
+
+  const service = await Service.findById(id);
+
+  if (!service) {
+    return res.status(404).json({
+      message: "Service not found",
+    });
+  }
+
+  service.name = name;
+  service.price = price;
+  service.description = description || "";
+
+  await service.save();
+
+  res.json(service);
 };

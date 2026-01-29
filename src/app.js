@@ -3,18 +3,24 @@ import cors from "cors";
 
 const app = express();
 
+/* ---------- CORS ---------- */
 const allowedOrigins = [
   "http://localhost:5173",
   "https://thesaudiproject.vercel.app",
 ];
 
-/* ---------- CORS (FIXED) ---------- */
 app.use(
   cors({
-    origin: allowedOrigins,
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   }),
 );
 

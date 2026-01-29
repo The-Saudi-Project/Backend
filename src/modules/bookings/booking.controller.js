@@ -6,9 +6,6 @@ import { BOOKING_STATUS, ALLOWED_TRANSITIONS } from "./booking.rules.js";
  * Customer: Create booking
  */
 export const createBooking = async (req, res) => {
-  console.log("🚨 CREATE BOOKING HIT");
-  console.log("📦 BODY:", req.body);
-  console.log("👤 USER:", req.user);
   const {
     serviceId,
     scheduledAt,
@@ -54,10 +51,7 @@ export const createBooking = async (req, res) => {
     notes,
     status: BOOKING_STATUS.CREATED,
   });
-  console.log("🧪 BOOKING BEFORE SAVE:", booking.toObject());
   await booking.save({ validateBeforeSave: true });
-
-  console.log("✅ SAVED BOOKING:", booking);
 
   res.status(201).json(booking);
 };
