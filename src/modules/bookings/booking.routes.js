@@ -41,5 +41,10 @@ router.post(
   authorizeRoles("provider"),
   updateBookingStatus,
 );
-
+router.patch(
+  "/:id/assign",
+  authenticate,
+  authorizeRoles("admin"),
+  assignProvider,
+);
 export default router;

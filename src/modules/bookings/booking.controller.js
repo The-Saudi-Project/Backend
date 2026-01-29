@@ -59,35 +59,34 @@ export const createBooking = async (req, res) => {
 /**
  * Admin: Assign provider to booking
  */
-export const assignProvider = async (req, res) => {
-  const { bookingId, providerId } = req.body;
 
-  const booking = await Booking.findById(bookingId);
+export const assignProvider = async (req, res) => {
+  const { providerId } = req.body;
+
+  if (!providerId) {
+    return res.status(400).json({ message: "Provider ID required" });
+  }
+
+  const booking = await Booking.findById(req.params.id);
   if (!booking) {
     return res.status(404).json({ message: "Booking not found" });
   }
 
-  if (booking.status !== BOOKING_STATUS.CREATED) {
+  if (booking.status !== "CREATED") {
     return res.status(400).json({
-      message: "Only newly created bookings can be assigned to a provider.",
+      message: "Only new bookings can be assigned",
     });
   }
 
-  const provider = await User.findOne({
-    _id: providerId,
-    role: "provider",
-  });
-
-  if (!provider) {
-    return res.status(404).json({ message: "Provider not found" });
-  }
-
   booking.provider = providerId;
-  booking.status = BOOKING_STATUS.ASSIGNED;
+  booking.status = "ASSIGNED";
 
   await booking.save();
 
-  res.json(booking);
+  res.json({
+    success: true,
+    booking,
+  });
 };
 
 /**

@@ -64,32 +64,26 @@ export const register = async (req, res) => {
  * LOGIN
  */
 export const login = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, expectedRole } = req.body;
 
   if (!email || !password) {
-    return res.status(400).json({
-      message: "Email and password are required.",
-    });
+    return res.status(400).json({ message: "Missing credentials" });
   }
 
-  const normalizedEmail = email.toLowerCase().trim();
-
-  // Explicitly select passwordHash (select: false in model)
-  const user = await User.findOne({
-    email: normalizedEmail,
-  }).select("+passwordHash");
-
+  const user = await User.findOne({ email });
   if (!user) {
-    return res.status(401).json({
-      message: "Invalid email or password.",
-    });
+    return res.status(401).json({ message: "Invalid email or password" });
   }
 
   const isValid = await comparePassword(password, user.passwordHash);
-
   if (!isValid) {
-    return res.status(401).json({
-      message: "Invalid email or password.",
+    return res.status(401).json({ message: "Invalid email or password" });
+  }
+
+  // ✅ ROLE ENFORCEMENT
+  if (expectedRole && user.role !== expectedRole) {
+    return res.status(403).json({
+      message: `This account is not a ${expectedRole} account`,
     });
   }
 
@@ -99,9 +93,7 @@ export const login = async (req, res) => {
     token,
     user: {
       id: user._id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
+      name: user.name,
       role: user.role,
     },
   });
