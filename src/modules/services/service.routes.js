@@ -10,7 +10,7 @@ import {
   authorizeRoles,
 } from "../../middlewares/auth.middleware.js";
 import { updateService } from "./service.controller.js";
-
+import { getPublicServices } from "./service.controller.js";
 const router = express.Router();
 
 // Public
@@ -33,5 +33,5 @@ router.delete(
   deleteService,
 );
 router.patch("/:id", authenticate, authorizeRoles("admin"), updateService);
-
+router.get("/public", getPublicServices);
 export default router;

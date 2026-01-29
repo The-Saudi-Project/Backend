@@ -18,44 +18,34 @@ const isValidPassword = (password) => {
  * REGISTER
  */
 export const register = async (req, res) => {
-  const { firstName, lastName, email, password, role } = req.body;
+  const { name, email, password, role, services } = req.body;
 
-  // Basic required fields
-  if (!firstName || !lastName || !email || !password) {
-    return res.status(400).json({
-      message: "First name, last name, email and password are required.",
-    });
+  if (!name || !email || !password) {
+    return res.status(400).json({ message: "Missing required fields" });
   }
 
-  // Password rules
-  if (!isValidPassword(password)) {
-    return res.status(400).json({
-      message:
-        "Password must be at least 8 characters and include a letter and a number.",
-    });
+  // 🔐 Provider validation
+  if (role === "provider") {
+    if (!Array.isArray(services) || services.length === 0) {
+      return res.status(400).json({
+        message: "Providers must select at least one service",
+      });
+    }
   }
 
-  const normalizedEmail = email.toLowerCase().trim();
-
-  // Check existing user
-  const existingUser = await User.findOne({ email: normalizedEmail });
+  const existingUser = await User.findOne({ email });
   if (existingUser) {
-    return res.status(409).json({
-      message: "An account with this email already exists.",
-    });
+    return res.status(409).json({ message: "Email already registered" });
   }
 
   const passwordHash = await hashPassword(password);
 
-  // Role safety: only allow customer or provider from public signup
-  const safeRole = role === "provider" ? "provider" : "customer";
-
   const user = await User.create({
-    firstName,
-    lastName,
-    email: normalizedEmail,
+    name,
+    email,
     passwordHash,
-    role: safeRole,
+    role: role || "customer",
+    services: role === "provider" ? services : [],
   });
 
   const token = generateToken(user);
@@ -64,9 +54,7 @@ export const register = async (req, res) => {
     token,
     user: {
       id: user._id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
+      name: user.name,
       role: user.role,
     },
   });

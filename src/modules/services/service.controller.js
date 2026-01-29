@@ -30,7 +30,16 @@ export const listServices = async (req, res) => {
 
   res.json(services);
 };
+//Get public services with limited fields
+export const getPublicServices = async (req, res) => {
+  const services = await Service.find({
+    $or: [{ isActive: true }, { isActive: { $exists: false } }],
+  })
+    .select("_id name price description")
+    .sort({ name: 1 });
 
+  res.json(services);
+};
 /**
  * Admin: List all services (active + inactive)
  */
