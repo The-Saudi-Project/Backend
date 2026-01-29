@@ -5,24 +5,52 @@ import User from "../users/user.model.js";
 /* ================= CUSTOMER ================= */
 
 export const createBooking = async (req, res) => {
-  const { serviceId } = req.body;
+  try {
+    const {
+      serviceId,
+      scheduledAt,
+      customerName,
+      customerPhone,
+      customerAddress,
+      notes,
+    } = req.body;
 
-  const service = await Service.findById(serviceId);
-  if (!service) {
-    return res.status(404).json({ message: "Service not found" });
+    if (
+      !serviceId ||
+      !scheduledAt ||
+      !customerName ||
+      !customerPhone ||
+      !customerAddress
+    ) {
+      return res.status(400).json({
+        message: "Missing required booking details",
+      });
+    }
+
+    const service = await Service.findById(serviceId);
+    if (!service) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+
+    const booking = await Booking.create({
+      service: serviceId,
+      customer: req.user.id,
+      customerName,
+      customerPhone,
+      customerAddress,
+      customerEmail: req.user.email,
+      notes: notes || "",
+      scheduledAt: new Date(scheduledAt),
+      status: "CREATED",
+    });
+
+    res.status(201).json(booking);
+  } catch (error) {
+    console.error("Create booking error:", error);
+    res.status(500).json({
+      message: "Failed to create booking",
+    });
   }
-
-  const booking = await Booking.create({
-    service: serviceId,
-    customer: req.user.id,
-    customerName: req.user.name,
-    customerEmail: req.user.email,
-    customerPhone: "N/A",
-    customerAddress: "Not provided",
-    scheduledAt: new Date(),
-  });
-
-  res.status(201).json(booking);
 };
 
 export const getCustomerBookings = async (req, res) => {

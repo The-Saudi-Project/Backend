@@ -18,7 +18,6 @@ const router = express.Router();
 
 /* ================= CUSTOMER ================= */
 
-// ✅ THIS IS MISSING
 router.get(
   "/customer",
   authenticate,
@@ -61,5 +60,6 @@ router.patch(
   authorizeRoles("provider"),
   completeBooking,
 );
+router.post("/", authenticate, authorizeRoles("customer"), createBooking);
 
 export default router;
