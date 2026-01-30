@@ -79,6 +79,12 @@ export const getProviderBookings = async (req, res) => {
 export const acceptBooking = async (req, res) => {
   const booking = await Booking.findById(req.params.id);
 
+  if (booking.status === "IN_PROGRESS") {
+    return res.status(400).json({
+      message: "Cannot reassign provider once job has started",
+    });
+  }
+
   if (!booking) {
     return res.status(404).json({ message: "Booking not found" });
   }
@@ -132,4 +138,35 @@ export const assignProvider = async (req, res) => {
   await booking.save();
 
   res.json(booking);
+};
+export const getAvailableProviders = async (req, res) => {
+  const { scheduledAt } = req.query;
+
+  if (!scheduledAt) {
+    return res.status(400).json({ message: "scheduledAt is required" });
+  }
+
+  const start = new Date(scheduledAt);
+  const end = new Date(start);
+  end.setHours(end.getHours() + 1); // 1-hour slot
+
+  // Providers who are busy in this time window
+  const busyBookings = await Booking.find({
+    scheduledAt: {
+      $gte: start,
+      $lt: end,
+    },
+    status: { $in: ["CREATED", "ASSIGNED", "IN_PROGRESS"] },
+    provider: { $ne: null },
+  }).select("provider");
+
+  const busyProviderIds = busyBookings.map((b) => b.provider.toString());
+
+  // Providers NOT busy
+  const availableProviders = await User.find({
+    role: "provider",
+    _id: { $nin: busyProviderIds },
+  }).select("_id name email");
+
+  res.json(availableProviders);
 };

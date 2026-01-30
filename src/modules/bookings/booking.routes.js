@@ -7,6 +7,7 @@ import {
   assignProvider,
   acceptBooking,
   completeBooking,
+  getAvailableProviders,
 } from "./booking.controller.js";
 
 import {
@@ -60,6 +61,13 @@ router.patch(
   authorizeRoles("provider"),
   completeBooking,
 );
+router.get(
+  "/available-providers",
+  authenticate,
+  authorizeRoles("admin"),
+  getAvailableProviders,
+);
+
 router.post("/", authenticate, authorizeRoles("customer"), createBooking);
 
 export default router;
