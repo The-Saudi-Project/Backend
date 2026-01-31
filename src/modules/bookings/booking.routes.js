@@ -8,6 +8,7 @@ import {
   acceptBooking,
   completeBooking,
   getAvailableProviders,
+  startBooking,
 } from "./booking.controller.js";
 
 import {
@@ -66,6 +67,12 @@ router.get(
   authenticate,
   authorizeRoles("admin"),
   getAvailableProviders,
+);
+router.patch(
+  "/:id/start",
+  authenticate,
+  authorizeRoles("provider"),
+  startBooking,
 );
 
 router.post("/", authenticate, authorizeRoles("customer"), createBooking);

@@ -3,7 +3,7 @@ import {
   authenticate,
   authorizeRoles,
 } from "../../middlewares/auth.middleware.js";
-import { listProviders } from "./user.controller.js";
+import { listProviders, getAllProviders } from "./user.controller.js";
 import { listProvidersWithAvailability } from "./user.controller.js";
 const router = express.Router();
 
@@ -14,4 +14,11 @@ router.get(
   authorizeRoles("admin"),
   listProvidersWithAvailability,
 );
+router.get(
+  "/providers",
+  authenticate,
+  authorizeRoles("admin"),
+  getAllProviders,
+);
+
 export default router;

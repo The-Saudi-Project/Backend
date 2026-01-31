@@ -34,3 +34,46 @@ export const listProvidersWithAvailability = async (req, res) => {
 
   res.json(result);
 };
+/**
+ * Admin: Get all providers with details
+ */
+export const getAllProviders = async (req, res) => {
+  const providers = await User.find({ role: "provider" })
+    .select("-password")
+    .populate("services", "name");
+
+  res.json(providers);
+};
+/**
+ * Admin: Reset provider password
+ */
+export const resetProviderPassword = async (req, res) => {
+  const provider = await User.findById(req.params.id);
+
+  if (!provider || provider.role !== "provider") {
+    return res.status(404).json({ message: "Provider not found" });
+  }
+
+  provider.forcePasswordReset = true;
+  await provider.save();
+
+  res.json({
+    message:
+      "Password reset enforced. Provider must set a new password on next login.",
+  });
+};
+export const updateProviderStatus = async (req, res) => {
+  const { active } = req.body;
+
+  const provider = await User.findById(req.params.id);
+  if (!provider || provider.role !== "provider") {
+    return res.status(404).json({ message: "Provider not found" });
+  }
+
+  provider.isActive = active;
+  await provider.save();
+
+  res.json({
+    message: `Provider ${active ? "activated" : "suspended"} successfully`,
+  });
+};

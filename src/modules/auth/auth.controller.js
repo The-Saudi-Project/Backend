@@ -75,6 +75,13 @@ export const login = async (req, res) => {
     return res.status(401).json({ message: "Invalid email or password" });
   }
 
+  if (user.forcePasswordReset) {
+    return res.status(403).json({
+      code: "FORCE_PASSWORD_RESET",
+      message: "Password reset required",
+    });
+  }
+
   const isValid = await comparePassword(password, user.passwordHash);
   if (!isValid) {
     return res.status(401).json({ message: "Invalid email or password" });
@@ -97,4 +104,17 @@ export const login = async (req, res) => {
       role: user.role,
     },
   });
+};
+export const resetPassword = async (req, res) => {
+  const { newPassword } = req.body;
+  const userId = req.user.id;
+
+  const user = await User.findById(userId);
+
+  user.password = await bcrypt.hash(newPassword, 10);
+  user.forcePasswordReset = false;
+
+  await user.save();
+
+  res.json({ message: "Password updated successfully" });
 };
