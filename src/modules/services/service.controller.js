@@ -103,3 +103,42 @@ export const updateService = async (req, res) => {
 
   res.json(service);
 };
+export const getLandingPageData = async (req, res) => {
+  try {
+    const featuredServices = await Service.find({
+      isActive: true,
+    }).limit(6);
+
+    const categories = await Service.aggregate([
+      { $match: { isActive: true, category: { $exists: true } } },
+      {
+        $group: {
+          _id: "$category",
+          services: {
+            $push: {
+              id: "$_id",
+              name: "$name",
+              icon: "$icon",
+              price: "$price",
+            },
+          },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    res.json({
+      featuredServices,
+      categories,
+      highlights: [
+        "Trusted professionals",
+        "On-time service",
+        "Transparent pricing",
+        "Verified technicians",
+      ],
+    });
+  } catch (error) {
+    console.error("Landing API error:", error);
+    res.status(500).json({ message: "Landing page data error" });
+  }
+};

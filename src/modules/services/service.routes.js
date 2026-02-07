@@ -4,6 +4,7 @@ import {
   listServices,
   deleteService,
   listAllServicesAdmin,
+  getLandingPageData,
 } from "./service.controller.js";
 import {
   authenticate,
@@ -25,7 +26,7 @@ router.get(
 );
 
 router.post("/", authenticate, authorizeRoles("admin"), createService);
-
+router.get("/landing", getLandingPageData);
 router.delete(
   "/:serviceId",
   authenticate,

@@ -8,6 +8,17 @@ const serviceSchema = new mongoose.Schema(
       trim: true,
     },
 
+    category: {
+      type: String,
+      required: true, // e.g. "AC Services", "Cleaning"
+      index: true,
+    },
+
+    icon: {
+      type: String,
+      required: true, // emoji for now
+    },
+
     description: {
       type: String,
       trim: true,
@@ -15,8 +26,13 @@ const serviceSchema = new mongoose.Schema(
 
     price: {
       type: Number,
-      required: true,
-      min: 0,
+      default: 0, // can be updated later
+    },
+    category: { type: String, required: true },
+    icon: { type: String, default: "🛠️" },
+    isFeatured: {
+      type: Boolean,
+      default: false, // landing page highlight
     },
 
     isActive: {
@@ -27,6 +43,4 @@ const serviceSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-const Service = mongoose.model("Service", serviceSchema);
-
-export default Service;
+export default mongoose.model("Service", serviceSchema);
