@@ -1,22 +1,13 @@
 import User from "../users/user.model.js";
-import { hashPassword, comparePassword, generateToken } from "./auth.utils.js";
+import {
+  hashPassword,
+  comparePassword,
+  generateAccessToken,
+  generateRefreshToken,
+} from "./auth.utils.js";
+import jwt from "jsonwebtoken";
 
-/**
- * Helpers
- */
-const isValidPassword = (password) => {
-  // min 8 chars, at least 1 letter and 1 number
-  return (
-    typeof password === "string" &&
-    password.length >= 8 &&
-    /[A-Za-z]/.test(password) &&
-    /\d/.test(password)
-  );
-};
-
-/**
- * REGISTER
- */
+/* ================= REGISTER ================= */
 export const register = async (req, res) => {
   const { name, email, password, role, services } = req.body;
 
@@ -24,17 +15,17 @@ export const register = async (req, res) => {
     return res.status(400).json({ message: "Missing required fields" });
   }
 
-  // 🔐 Provider validation
-  if (role === "provider") {
-    if (!Array.isArray(services) || services.length === 0) {
-      return res.status(400).json({
-        message: "Providers must select at least one service",
-      });
-    }
+  if (
+    role === "provider" &&
+    (!Array.isArray(services) || services.length === 0)
+  ) {
+    return res.status(400).json({
+      message: "Providers must select at least one service",
+    });
   }
 
-  const existingUser = await User.findOne({ email });
-  if (existingUser) {
+  const existing = await User.findOne({ email });
+  if (existing) {
     return res.status(409).json({ message: "Email already registered" });
   }
 
@@ -48,56 +39,35 @@ export const register = async (req, res) => {
     services: role === "provider" ? services : [],
   });
 
-  const token = generateToken(user);
-
-  res.status(201).json({
-    token,
-    user: {
-      id: user._id,
-      name: user.name,
-      role: user.role,
-    },
-  });
+  res.status(201).json({ message: "Account created" });
 };
 
-/**
- * LOGIN
- */
+/* ================= LOGIN ================= */
 export const login = async (req, res) => {
   const { email, password, expectedRole } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ message: "Missing credentials" });
-  }
-
   const user = await User.findOne({ email });
   if (!user) {
-    return res.status(401).json({ message: "Invalid email or password" });
+    return res.status(401).json({ message: "Invalid credentials" });
   }
 
-  if (user.forcePasswordReset) {
-    return res.status(403).json({
-      code: "FORCE_PASSWORD_RESET",
-      message: "Password reset required",
-    });
+  const ok = await comparePassword(password, user.passwordHash);
+  if (!ok) {
+    return res.status(401).json({ message: "Invalid credentials" });
   }
 
-  const isValid = await comparePassword(password, user.passwordHash);
-  if (!isValid) {
-    return res.status(401).json({ message: "Invalid email or password" });
-  }
-
-  // ✅ ROLE ENFORCEMENT
   if (expectedRole && user.role !== expectedRole) {
     return res.status(403).json({
       message: `This account is not a ${expectedRole} account`,
     });
   }
 
-  const token = generateToken(user);
+  const accessToken = generateAccessToken(user);
+  const refreshToken = generateRefreshToken(user);
 
   res.json({
-    token,
+    accessToken,
+    refreshToken,
     user: {
       id: user._id,
       name: user.name,
@@ -105,16 +75,21 @@ export const login = async (req, res) => {
     },
   });
 };
-export const resetPassword = async (req, res) => {
-  const { newPassword } = req.body;
-  const userId = req.user.id;
 
-  const user = await User.findById(userId);
+/* ================= REFRESH ================= */
+export const refresh = async (req, res) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) {
+    return res.status(401).json({ message: "Missing refresh token" });
+  }
 
-  user.password = await bcrypt.hash(newPassword, 10);
-  user.forcePasswordReset = false;
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    const user = await User.findById(decoded.userId);
 
-  await user.save();
-
-  res.json({ message: "Password updated successfully" });
+    const newAccessToken = generateAccessToken(user);
+    res.json({ accessToken: newAccessToken });
+  } catch {
+    res.status(401).json({ message: "Invalid refresh token" });
+  }
 };
