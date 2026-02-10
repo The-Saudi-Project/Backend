@@ -42,5 +42,5 @@ app.use("/api/auth", authRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/users", userRoutes);
-
+app.use("/uploads", express.static("uploads"));
 export default app;

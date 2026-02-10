@@ -251,3 +251,46 @@ export const startBooking = async (req, res) => {
 
   res.json(booking);
 };
+export const uploadPaymentProof = async (req, res) => {
+  const booking = await Booking.findById(req.params.id);
+
+  if (!booking) {
+    return res.status(404).json({ message: "Booking not found" });
+  }
+
+  if (booking.status !== "PENDING_PAY") {
+    return res.status(400).json({
+      message: "Payment already processed",
+    });
+  }
+
+  booking.paymentProof = req.file.filename;
+  booking.status = "PAYMENT_UPLOADED";
+
+  await booking.save();
+
+  res.json({ message: "Payment proof uploaded" });
+};
+
+// COnfirm Payment
+
+export const confirmPayment = async (req, res) => {
+  const booking = await Booking.findById(req.params.id);
+
+  if (!booking) {
+    return res.status(404).json({ message: "Booking not found" });
+  }
+
+  if (booking.status !== "PAYMENT_UPLOADED") {
+    return res.status(400).json({
+      message: "No payment proof uploaded",
+    });
+  }
+
+  booking.status = "CONFIRMED";
+  booking.paymentConfirmedAt = new Date();
+
+  await booking.save();
+
+  res.json({ message: "Payment confirmed" });
+};

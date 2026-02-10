@@ -42,6 +42,7 @@ const bookingSchema = new mongoose.Schema(
       type: String,
       enum: [
         "PENDING_PAY",
+        "PAYMENT_UPLOADED",
         "CONFIRMED",
         "ASSIGNED",
         "IN_PROGRESS",
@@ -51,11 +52,21 @@ const bookingSchema = new mongoose.Schema(
       ],
       default: "PENDING_PAY",
     },
+
+    paymentProof: {
+      type: String, // filename
+      default: null,
+    },
+
+    paymentConfirmedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true },
 );
 
-// Auto-expire unpaid bookings
+// auto-expire unpaid bookings
 bookingSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export default mongoose.model("Booking", bookingSchema);

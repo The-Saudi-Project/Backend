@@ -9,8 +9,10 @@ import {
   completeBooking,
   getAvailableProviders,
   startBooking,
+  uploadPaymentProof,
+  confirmPayment,
 } from "./booking.controller.js";
-
+import { uploadPayment } from "../../middlewares/upload.middleware.js";
 import {
   authenticate,
   authorizeRoles,
@@ -73,6 +75,20 @@ router.patch(
   authenticate,
   authorizeRoles("provider"),
   startBooking,
+);
+router.post(
+  "/:id/payment-proof",
+  authenticate,
+  authorizeRoles("customer"),
+  uploadPayment.single("proof"),
+  uploadPaymentProof,
+);
+
+router.patch(
+  "/:id/confirm-payment",
+  authenticate,
+  authorizeRoles("admin"),
+  confirmPayment,
 );
 
 router.post("/", authenticate, authorizeRoles("customer"), createBooking);

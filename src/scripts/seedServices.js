@@ -105,8 +105,6 @@ async function seed() {
 
   await Service.deleteMany({});
   await Service.insertMany(services);
-
-  console.log("✅ Services seeded successfully");
   process.exit();
 }
 
