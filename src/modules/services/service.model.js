@@ -10,29 +10,30 @@ const serviceSchema = new mongoose.Schema(
 
     category: {
       type: String,
-      required: true, // e.g. "AC Services", "Cleaning"
+      required: true, // e.g. "Cleaning", "AC Services"
       index: true,
     },
 
     icon: {
       type: String,
-      required: true, // emoji for now
+      default: "🛠️", // emoji placeholder
     },
 
     description: {
       type: String,
       trim: true,
+      default: "",
     },
 
     price: {
       type: Number,
-      default: 0, // can be updated later
+      required: true,
+      min: 0,
     },
-    category: { type: String, required: true },
-    icon: { type: String, default: "🛠️" },
+
     isFeatured: {
       type: Boolean,
-      default: false, // landing page highlight
+      default: false,
     },
 
     isActive: {

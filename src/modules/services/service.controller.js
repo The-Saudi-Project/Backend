@@ -1,56 +1,63 @@
 import Service from "./service.model.js";
 import Booking from "../bookings/booking.model.js";
 
-/**
- * Admin: Create a new service
- */
+/* ================= ADMIN ================= */
+
 export const createService = async (req, res) => {
-  const { name, description, price } = req.body;
+  try {
+    const { name, category, icon, description, price } = req.body;
 
-  if (!name || price === undefined) {
-    return res.status(400).json({ message: "Name and price are required" });
+    if (!name || !category || price === undefined) {
+      return res.status(400).json({
+        message: "Name, category and price are required",
+      });
+    }
+
+    const service = await Service.create({
+      name,
+      category,
+      icon: icon || "🛠️",
+      description: description || "",
+      price,
+    });
+
+    res.status(201).json(service);
+  } catch (err) {
+    console.error("Create service error:", err);
+    res.status(500).json({ message: "Failed to create service" });
   }
-
-  const service = await Service.create({
-    name,
-    description,
-    price,
-  });
-
-  res.status(201).json(service);
 };
 
-/**
- * Public: List all active services
- */
-export const listServices = async (req, res) => {
-  const services = await Service.find({ isActive: true }).sort({
-    createdAt: -1,
-  });
-
-  res.json(services);
-};
-//Get public services with limited fields
-export const getPublicServices = async (req, res) => {
-  const services = await Service.find({
-    $or: [{ isActive: true }, { isActive: { $exists: false } }],
-  })
-    .select("_id name price description")
-    .sort({ name: 1 });
-
-  res.json(services);
-};
-/**
- * Admin: List all services (active + inactive)
- */
 export const listAllServicesAdmin = async (req, res) => {
   const services = await Service.find().sort({ createdAt: -1 });
   res.json(services);
 };
 
-/**
- * Admin: Delete service (hard delete)s
- */
+export const updateService = async (req, res) => {
+  const { id } = req.params;
+  const { name, category, icon, description, price } = req.body;
+
+  if (!name || !category || price === undefined) {
+    return res.status(400).json({
+      message: "Name, category and price are required",
+    });
+  }
+
+  const service = await Service.findById(id);
+  if (!service) {
+    return res.status(404).json({ message: "Service not found" });
+  }
+
+  service.name = name;
+  service.category = category;
+  service.icon = icon || service.icon;
+  service.description = description || "";
+  service.price = price;
+
+  await service.save();
+  res.json(service);
+};
+
 export const deleteService = async (req, res) => {
   const { serviceId } = req.params;
 
@@ -59,7 +66,6 @@ export const deleteService = async (req, res) => {
     return res.status(404).json({ message: "Service not found" });
   }
 
-  // SAFETY CHECK: prevent deleting services with bookings
   const bookingCount = await Booking.countDocuments({
     service: serviceId,
   });
@@ -67,50 +73,40 @@ export const deleteService = async (req, res) => {
   if (bookingCount > 0) {
     return res.status(400).json({
       message:
-        "This job has active bookings. Complete or cancel them before deleting.",
+        "This service has bookings. Complete or cancel them before deleting.",
     });
   }
 
   await Service.deleteOne({ _id: serviceId });
-
   res.json({ message: "Service deleted permanently" });
 };
 
-//Edit service
-export const updateService = async (req, res) => {
-  const { id } = req.params;
-  const { name, price, description } = req.body;
+/* ================= PUBLIC ================= */
 
-  if (!name || price === undefined) {
-    return res.status(400).json({
-      message: "Name and price are required",
-    });
-  }
-
-  const service = await Service.findById(id);
-
-  if (!service) {
-    return res.status(404).json({
-      message: "Service not found",
-    });
-  }
-
-  service.name = name;
-  service.price = price;
-  service.description = description || "";
-
-  await service.save();
-
-  res.json(service);
+export const listServices = async (req, res) => {
+  const services = await Service.find({ isActive: true }).sort({
+    createdAt: -1,
+  });
+  res.json(services);
 };
+
+export const getPublicServices = async (req, res) => {
+  const services = await Service.find({ isActive: true })
+    .select("_id name price description icon category")
+    .sort({ name: 1 });
+
+  res.json(services);
+};
+
 export const getLandingPageData = async (req, res) => {
   try {
     const featuredServices = await Service.find({
       isActive: true,
+      isFeatured: true,
     }).limit(6);
 
     const categories = await Service.aggregate([
-      { $match: { isActive: true, category: { $exists: true } } },
+      { $match: { isActive: true } },
       {
         $group: {
           _id: "$category",

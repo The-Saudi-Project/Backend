@@ -20,6 +20,11 @@ const bookingSchema = new mongoose.Schema(
       default: null,
     },
 
+    /* ---------- SNAPSHOT DATA ---------- */
+    serviceName: { type: String, required: true },
+    servicePrice: { type: Number, required: true }, // 🔑 PRICE AT BOOK TIME
+
+    /* ---------- CUSTOMER ---------- */
     customerName: { type: String, required: true },
     customerPhone: { type: String, required: true },
     customerEmail: { type: String },
@@ -38,6 +43,29 @@ const bookingSchema = new mongoose.Schema(
       index: true,
     },
 
+    /* ---------- PAYMENT ---------- */
+    amountPaid: {
+      type: Number,
+      default: 0,
+    },
+
+    paymentProof: {
+      type: String,
+      default: null,
+    },
+
+    paymentConfirmedAt: {
+      type: Date,
+      default: null,
+    },
+
+    /* ---------- PROVIDER ---------- */
+    providerEarning: {
+      type: Number,
+      default: 0,
+    },
+
+    /* ---------- STATUS ---------- */
     status: {
       type: String,
       enum: [
@@ -52,21 +80,11 @@ const bookingSchema = new mongoose.Schema(
       ],
       default: "PENDING_PAY",
     },
-
-    paymentProof: {
-      type: String, // filename
-      default: null,
-    },
-
-    paymentConfirmedAt: {
-      type: Date,
-      default: null,
-    },
   },
   { timestamps: true },
 );
 
-// auto-expire unpaid bookings
+// Auto-expire unpaid bookings
 bookingSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export default mongoose.model("Booking", bookingSchema);

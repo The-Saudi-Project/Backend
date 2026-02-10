@@ -5,13 +5,13 @@ import {
   getProviderBookings,
   getAllBookingsAdmin,
   assignProvider,
-  acceptBooking,
   completeBooking,
   getAvailableProviders,
   startBooking,
   uploadPaymentProof,
   confirmPayment,
 } from "./booking.controller.js";
+
 import { uploadPayment } from "../../middlewares/upload.middleware.js";
 import {
   authenticate,
@@ -22,6 +22,10 @@ const router = express.Router();
 
 /* ================= CUSTOMER ================= */
 
+// Create booking
+router.post("/", authenticate, authorizeRoles("customer"), createBooking);
+
+// Customer bookings
 router.get(
   "/customer",
   authenticate,
@@ -29,10 +33,9 @@ router.get(
   getCustomerBookings,
 );
 
-router.post("/", authenticate, authorizeRoles("customer"), createBooking);
-
 /* ================= PROVIDER ================= */
 
+// Provider assigned jobs
 router.get(
   "/provider",
   authenticate,
@@ -40,10 +43,28 @@ router.get(
   getProviderBookings,
 );
 
+// Provider starts job
+router.patch(
+  "/:id/start",
+  authenticate,
+  authorizeRoles("provider"),
+  startBooking,
+);
+
+// Provider completes job
+router.patch(
+  "/:id/complete",
+  authenticate,
+  authorizeRoles("provider"),
+  completeBooking,
+);
+
 /* ================= ADMIN ================= */
 
+// All bookings
 router.get("/", authenticate, authorizeRoles("admin"), getAllBookingsAdmin);
 
+// Assign or change provider
 router.patch(
   "/:id/assign",
   authenticate,
@@ -51,39 +72,15 @@ router.patch(
   assignProvider,
 );
 
-router.patch(
-  "/:id/accept",
-  authenticate,
-  authorizeRoles("provider"),
-  acceptBooking,
-);
-
-router.patch(
-  "/:id/complete",
-  authenticate,
-  authorizeRoles("provider"),
-  completeBooking,
-);
+// Available providers
 router.get(
   "/available-providers",
   authenticate,
   authorizeRoles("admin"),
   getAvailableProviders,
 );
-router.patch(
-  "/:id/start",
-  authenticate,
-  authorizeRoles("provider"),
-  startBooking,
-);
-router.post(
-  "/:id/payment-proof",
-  authenticate,
-  authorizeRoles("customer"),
-  uploadPayment.single("proof"),
-  uploadPaymentProof,
-);
 
+// Confirm payment
 router.patch(
   "/:id/confirm-payment",
   authenticate,
@@ -91,6 +88,15 @@ router.patch(
   confirmPayment,
 );
 
-router.post("/", authenticate, authorizeRoles("customer"), createBooking);
+/* ================= PAYMENT ================= */
+
+// Upload payment proof
+router.post(
+  "/:id/payment-proof",
+  authenticate,
+  authorizeRoles("customer"),
+  uploadPayment.single("proof"),
+  uploadPaymentProof,
+);
 
 export default router;
