@@ -27,9 +27,19 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    const service = await Service.findById(serviceId);
-    if (!service) {
-      return res.status(404).json({ message: "Service not found" });
+    const scheduledDate = new Date(scheduledAt);
+
+    // 🔒 SLOT LOCK — BLOCK DOUBLE BOOKINGS
+    const clash = await Booking.findOne({
+      service: serviceId,
+      scheduledAt: scheduledDate,
+      status: { $in: ["PENDING_PAY", "CONFIRMED", "ASSIGNED", "IN_PROGRESS"] },
+    });
+
+    if (clash) {
+      return res.status(409).json({
+        message: "This time slot is already booked",
+      });
     }
 
     const booking = await Booking.create({
@@ -40,8 +50,10 @@ export const createBooking = async (req, res) => {
       customerAddress,
       customerEmail: req.user.email,
       notes: notes || "",
-      scheduledAt: new Date(scheduledAt),
-      status: "CREATED",
+      scheduledAt: scheduledDate,
+
+      status: "PENDING_PAY",
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000), // ⏱ 10 min lock
     });
 
     res.status(201).json(booking);

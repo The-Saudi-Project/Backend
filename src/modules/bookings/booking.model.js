@@ -20,39 +20,42 @@ const bookingSchema = new mongoose.Schema(
       default: null,
     },
 
-    /* CUSTOMER DETAILS (SNAPSHOT) */
-    customerName: {
-      type: String,
-      required: true,
-    },
-    customerPhone: {
-      type: String,
-      required: true,
-    },
-    customerEmail: {
-      type: String,
-    },
-    customerAddress: {
-      type: String,
-      required: true,
-    },
+    customerName: { type: String, required: true },
+    customerPhone: { type: String, required: true },
+    customerEmail: { type: String },
+    customerAddress: { type: String, required: true },
 
-    notes: {
-      type: String,
-    },
+    notes: { type: String },
 
     scheduledAt: {
       type: Date,
       required: true,
     },
 
+    expiresAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
+
     status: {
       type: String,
-      enum: ["CREATED", "ASSIGNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"],
-      default: "CREATED",
+      enum: [
+        "PENDING_PAY",
+        "CONFIRMED",
+        "ASSIGNED",
+        "IN_PROGRESS",
+        "COMPLETED",
+        "CANCELLED",
+        "EXPIRED",
+      ],
+      default: "PENDING_PAY",
     },
   },
   { timestamps: true },
 );
+
+// Auto-expire unpaid bookings
+bookingSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export default mongoose.model("Booking", bookingSchema);

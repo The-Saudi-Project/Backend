@@ -1,11 +1,5 @@
 import User from "../users/user.model.js";
-import {
-  hashPassword,
-  comparePassword,
-  generateAccessToken,
-  generateRefreshToken,
-} from "./auth.utils.js";
-import jwt from "jsonwebtoken";
+import { hashPassword, comparePassword, generateToken } from "./auth.utils.js";
 
 /* ================= REGISTER ================= */
 export const register = async (req, res) => {
@@ -15,13 +9,10 @@ export const register = async (req, res) => {
     return res.status(400).json({ message: "Missing required fields" });
   }
 
-  if (
-    role === "provider" &&
-    (!Array.isArray(services) || services.length === 0)
-  ) {
-    return res.status(400).json({
-      message: "Providers must select at least one service",
-    });
+  if (role === "provider" && (!services || services.length === 0)) {
+    return res
+      .status(400)
+      .json({ message: "Providers must select at least one service" });
   }
 
   const existing = await User.findOne({ email });
@@ -31,7 +22,7 @@ export const register = async (req, res) => {
 
   const passwordHash = await hashPassword(password);
 
-  const user = await User.create({
+  await User.create({
     name,
     email,
     passwordHash,
@@ -62,34 +53,14 @@ export const login = async (req, res) => {
     });
   }
 
-  const accessToken = generateAccessToken(user);
-  const refreshToken = generateRefreshToken(user);
+  const token = generateToken(user);
 
   res.json({
-    accessToken,
-    refreshToken,
+    token,
     user: {
       id: user._id,
       name: user.name,
       role: user.role,
     },
   });
-};
-
-/* ================= REFRESH ================= */
-export const refresh = async (req, res) => {
-  const { refreshToken } = req.body;
-  if (!refreshToken) {
-    return res.status(401).json({ message: "Missing refresh token" });
-  }
-
-  try {
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-    const user = await User.findById(decoded.userId);
-
-    const newAccessToken = generateAccessToken(user);
-    res.json({ accessToken: newAccessToken });
-  } catch {
-    res.status(401).json({ message: "Invalid refresh token" });
-  }
 };
