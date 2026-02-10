@@ -22,9 +22,9 @@ export const createBooking = async (req, res) => {
       !customerPhone ||
       !customerAddress
     ) {
-      return res
-        .status(400)
-        .json({ message: "Missing required booking details" });
+      return res.status(400).json({
+        message: "Missing required booking details",
+      });
     }
 
     const service = await Service.findById(serviceId);
@@ -41,29 +41,33 @@ export const createBooking = async (req, res) => {
     });
 
     if (clash) {
-      return res
-        .status(409)
-        .json({ message: "This time slot is already booked" });
+      return res.status(409).json({
+        message: "This time slot is already booked",
+      });
     }
 
     const booking = await Booking.create({
       service: serviceId,
+
+      // 🔑 SNAPSHOT (DO NOT REMOVE)
       serviceName: service.name,
       servicePrice: service.price,
+
       customer: req.user.id,
       customerName,
       customerPhone,
       customerEmail: req.user.email,
       customerAddress,
       notes: notes || "",
+
       scheduledAt: scheduledDate,
       status: "PENDING_PAY",
       expiresAt: new Date(Date.now() + 10 * 60 * 1000),
     });
 
     res.status(201).json(booking);
-  } catch (err) {
-    console.error(err);
+  } catch (error) {
+    console.error("Create booking error:", error);
     res.status(500).json({ message: "Failed to create booking" });
   }
 };
@@ -203,4 +207,49 @@ export const confirmPayment = async (req, res) => {
   await booking.save();
 
   res.json({ message: "Payment confirmed" });
+};
+/* ================= CUSTOMER: RESCHEDULE ================= */
+
+export const rescheduleBooking = async (req, res) => {
+  const { id } = req.params;
+  const { scheduledAt } = req.body;
+
+  if (!scheduledAt) {
+    return res.status(400).json({ message: "New date/time required" });
+  }
+
+  const booking = await Booking.findById(id);
+
+  if (!booking) {
+    return res.status(404).json({ message: "Booking not found" });
+  }
+
+  if (["IN_PROGRESS", "COMPLETED"].includes(booking.status)) {
+    return res.status(400).json({
+      message: "Cannot reschedule after job has started",
+    });
+  }
+
+  const newDate = new Date(scheduledAt);
+
+  const clash = await Booking.findOne({
+    _id: { $ne: booking._id },
+    service: booking.service,
+    scheduledAt: newDate,
+    status: { $in: ["CONFIRMED", "ASSIGNED", "IN_PROGRESS"] },
+  });
+
+  if (clash) {
+    return res.status(409).json({
+      message: "Selected time slot is not available",
+    });
+  }
+
+  booking.scheduledAt = newDate;
+  booking.status =
+    booking.status === "PENDING_PAY" ? "PENDING_PAY" : "CONFIRMED";
+
+  await booking.save();
+
+  res.json(booking);
 };

@@ -10,6 +10,7 @@ import {
   assignProvider,
   uploadPaymentProof,
   confirmPayment,
+  rescheduleBooking,
 } from "./booking.controller.js";
 
 import { uploadPayment } from "../../middlewares/upload.middleware.js";
@@ -35,6 +36,20 @@ router.patch(
   "/:id/cancel",
   authenticate,
   authorizeRoles("customer"),
+  cancelBooking,
+);
+// Reschedule booking
+router.patch(
+  "/:id/reschedule",
+  authenticate,
+  authorizeRoles("customer"),
+  rescheduleBooking,
+);
+// Cancel booking (customer + admin)
+router.patch(
+  "/:id/cancel",
+  authenticate,
+  authorizeRoles("customer", "admin"),
   cancelBooking,
 );
 
