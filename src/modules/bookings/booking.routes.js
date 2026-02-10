@@ -2,12 +2,12 @@ import express from "express";
 import {
   createBooking,
   getCustomerBookings,
+  cancelBooking,
   getProviderBookings,
+  startBooking,
+  completeBooking,
   getAllBookingsAdmin,
   assignProvider,
-  completeBooking,
-  getAvailableProviders,
-  startBooking,
   uploadPaymentProof,
   confirmPayment,
 } from "./booking.controller.js";
@@ -22,10 +22,8 @@ const router = express.Router();
 
 /* ================= CUSTOMER ================= */
 
-// Create booking
 router.post("/", authenticate, authorizeRoles("customer"), createBooking);
 
-// Customer bookings
 router.get(
   "/customer",
   authenticate,
@@ -33,9 +31,15 @@ router.get(
   getCustomerBookings,
 );
 
+router.patch(
+  "/:id/cancel",
+  authenticate,
+  authorizeRoles("customer"),
+  cancelBooking,
+);
+
 /* ================= PROVIDER ================= */
 
-// Provider assigned jobs
 router.get(
   "/provider",
   authenticate,
@@ -43,7 +47,6 @@ router.get(
   getProviderBookings,
 );
 
-// Provider starts job
 router.patch(
   "/:id/start",
   authenticate,
@@ -51,7 +54,6 @@ router.patch(
   startBooking,
 );
 
-// Provider completes job
 router.patch(
   "/:id/complete",
   authenticate,
@@ -61,10 +63,8 @@ router.patch(
 
 /* ================= ADMIN ================= */
 
-// All bookings
 router.get("/", authenticate, authorizeRoles("admin"), getAllBookingsAdmin);
 
-// Assign or change provider
 router.patch(
   "/:id/assign",
   authenticate,
@@ -72,15 +72,6 @@ router.patch(
   assignProvider,
 );
 
-// Available providers
-router.get(
-  "/available-providers",
-  authenticate,
-  authorizeRoles("admin"),
-  getAvailableProviders,
-);
-
-// Confirm payment
 router.patch(
   "/:id/confirm-payment",
   authenticate,
@@ -90,7 +81,6 @@ router.patch(
 
 /* ================= PAYMENT ================= */
 
-// Upload payment proof
 router.post(
   "/:id/payment-proof",
   authenticate,

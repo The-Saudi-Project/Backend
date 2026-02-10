@@ -22,9 +22,14 @@ export const createBooking = async (req, res) => {
       !customerPhone ||
       !customerAddress
     ) {
-      return res.status(400).json({
-        message: "Missing required booking details",
-      });
+      return res
+        .status(400)
+        .json({ message: "Missing required booking details" });
+    }
+
+    const service = await Service.findById(serviceId);
+    if (!service) {
+      return res.status(404).json({ message: "Service not found" });
     }
 
     const scheduledDate = new Date(scheduledAt);
@@ -36,18 +41,20 @@ export const createBooking = async (req, res) => {
     });
 
     if (clash) {
-      return res.status(409).json({
-        message: "This time slot is already booked",
-      });
+      return res
+        .status(409)
+        .json({ message: "This time slot is already booked" });
     }
 
     const booking = await Booking.create({
       service: serviceId,
+      serviceName: service.name,
+      servicePrice: service.price,
       customer: req.user.id,
       customerName,
       customerPhone,
-      customerAddress,
       customerEmail: req.user.email,
+      customerAddress,
       notes: notes || "",
       scheduledAt: scheduledDate,
       status: "PENDING_PAY",
@@ -55,27 +62,55 @@ export const createBooking = async (req, res) => {
     });
 
     res.status(201).json(booking);
-  } catch (error) {
-    console.error("Create booking error:", error);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Failed to create booking" });
   }
 };
 
 export const getCustomerBookings = async (req, res) => {
   const bookings = await Booking.find({ customer: req.user.id })
-    .populate("service", "name price")
+    .populate("provider", "name email")
     .sort({ createdAt: -1 });
 
   res.json(bookings);
 };
 
+/* ================= CUSTOMER CANCEL ================= */
+
+export const cancelBooking = async (req, res) => {
+  const booking = await Booking.findById(req.params.id);
+
+  if (!booking) {
+    return res.status(404).json({ message: "Booking not found" });
+  }
+
+  if (booking.customer.toString() !== req.user.id) {
+    return res.status(403).json({ message: "Not allowed" });
+  }
+
+  if (["IN_PROGRESS", "COMPLETED", "EXPIRED"].includes(booking.status)) {
+    return res.status(400).json({
+      message: "This booking cannot be cancelled",
+    });
+  }
+
+  booking.status = "CANCELLED";
+  booking.cancelledAt = new Date();
+  booking.cancelledBy = "customer";
+  booking.provider = null;
+
+  await booking.save();
+
+  res.json({ message: "Booking cancelled", booking });
+};
+
 /* ================= PROVIDER ================= */
 
 export const getProviderBookings = async (req, res) => {
-  const bookings = await Booking.find({ provider: req.user.id })
-    .populate("service", "name price")
-    .populate("customer", "name email")
-    .sort({ createdAt: -1 });
+  const bookings = await Booking.find({ provider: req.user.id }).sort({
+    createdAt: -1,
+  });
 
   res.json(bookings);
 };
@@ -83,18 +118,11 @@ export const getProviderBookings = async (req, res) => {
 export const startBooking = async (req, res) => {
   const booking = await Booking.findById(req.params.id);
 
-  if (!booking) {
-    return res.status(404).json({ message: "Booking not found" });
-  }
-
-  if (booking.status !== "ASSIGNED") {
-    return res.status(400).json({
-      message: "Only assigned bookings can be started",
-    });
+  if (!booking || booking.status !== "ASSIGNED") {
+    return res.status(400).json({ message: "Cannot start booking" });
   }
 
   booking.status = "IN_PROGRESS";
-  booking.startedAt = new Date();
   await booking.save();
 
   res.json(booking);
@@ -103,8 +131,8 @@ export const startBooking = async (req, res) => {
 export const completeBooking = async (req, res) => {
   const booking = await Booking.findById(req.params.id);
 
-  if (!booking) {
-    return res.status(404).json({ message: "Booking not found" });
+  if (!booking || booking.status !== "IN_PROGRESS") {
+    return res.status(400).json({ message: "Cannot complete booking" });
   }
 
   booking.status = "COMPLETED";
@@ -128,19 +156,11 @@ export const getAllBookingsAdmin = async (req, res) => {
 export const assignProvider = async (req, res) => {
   const { providerId } = req.body;
 
-  if (!providerId) {
-    return res.status(400).json({ message: "providerId is required" });
-  }
-
   const booking = await Booking.findById(req.params.id);
-  if (!booking) {
-    return res.status(404).json({ message: "Booking not found" });
-  }
+  if (!booking) return res.status(404).json({ message: "Booking not found" });
 
   if (["IN_PROGRESS", "COMPLETED"].includes(booking.status)) {
-    return res.status(400).json({
-      message: "Cannot change provider after job has started",
-    });
+    return res.status(400).json({ message: "Cannot change provider" });
   }
 
   const provider = await User.findById(providerId);
@@ -155,40 +175,13 @@ export const assignProvider = async (req, res) => {
   res.json(booking);
 };
 
-export const getAvailableProviders = async (req, res) => {
-  const { scheduledAt } = req.query;
-
-  if (!scheduledAt) {
-    return res.status(400).json({ message: "scheduledAt is required" });
-  }
-
-  const busy = await Booking.find({
-    scheduledAt: new Date(scheduledAt),
-    status: { $in: ["ASSIGNED", "IN_PROGRESS"] },
-    provider: { $ne: null },
-  }).select("provider");
-
-  const busyIds = busy.map((b) => b.provider);
-
-  const providers = await User.find({
-    role: "provider",
-    _id: { $nin: busyIds },
-  }).select("_id name email");
-
-  res.json(providers);
-};
-
 /* ================= PAYMENT ================= */
 
 export const uploadPaymentProof = async (req, res) => {
   const booking = await Booking.findById(req.params.id);
 
-  if (!booking) {
-    return res.status(404).json({ message: "Booking not found" });
-  }
-
-  if (booking.status !== "PENDING_PAY") {
-    return res.status(400).json({ message: "Payment already processed" });
+  if (!booking || booking.status !== "PENDING_PAY") {
+    return res.status(400).json({ message: "Payment not allowed" });
   }
 
   booking.paymentProof = req.file.filename;
@@ -201,11 +194,7 @@ export const uploadPaymentProof = async (req, res) => {
 export const confirmPayment = async (req, res) => {
   const booking = await Booking.findById(req.params.id);
 
-  if (!booking) {
-    return res.status(404).json({ message: "Booking not found" });
-  }
-
-  if (booking.status !== "PAYMENT_UPLOADED") {
+  if (!booking || booking.status !== "PAYMENT_UPLOADED") {
     return res.status(400).json({ message: "No payment proof uploaded" });
   }
 

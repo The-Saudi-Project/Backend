@@ -22,7 +22,7 @@ const bookingSchema = new mongoose.Schema(
 
     /* ---------- SNAPSHOT DATA ---------- */
     serviceName: { type: String, required: true },
-    servicePrice: { type: Number, required: true }, // 🔑 PRICE AT BOOK TIME
+    servicePrice: { type: Number, required: true },
 
     /* ---------- CUSTOMER ---------- */
     customerName: { type: String, required: true },
@@ -63,6 +63,18 @@ const bookingSchema = new mongoose.Schema(
     providerEarning: {
       type: Number,
       default: 0,
+    },
+
+    /* ---------- CANCELLATION ---------- */
+    cancelledAt: {
+      type: Date,
+      default: null,
+    },
+
+    cancelledBy: {
+      type: String,
+      enum: ["customer", "admin"],
+      default: null,
     },
 
     /* ---------- STATUS ---------- */
